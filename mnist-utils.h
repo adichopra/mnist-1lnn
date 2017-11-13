@@ -9,11 +9,11 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define MNIST_TESTING_SET_IMAGE_FILE_NAME "data/t10k-images-idx3-ubyte"  ///< MNIST image testing file in the data folder
-#define MNIST_TESTING_SET_LABEL_FILE_NAME "data/t10k-labels-idx1-ubyte"  ///< MNIST label testing file in the data folder
-#define MNIST_MAX_TESTING_IMAGES 10000                      ///< number of images+labels in the TEST file/s
-#define MNIST_IMG_WIDTH 28                                  ///< image width in pixel
-#define MNIST_IMG_HEIGHT 28                                 ///< image height in pixel
+#define MNIST_TESTING_SET_IMAGE_FILE_NAME "data/t10k-images-idx3-ubyte" // MNIST image testing file in the data folder
+#define MNIST_TESTING_SET_LABEL_FILE_NAME "data/t10k-labels-idx1-ubyte" // MNIST label testing file in the data folder
+#define MNIST_MAX_TESTING_IMAGES 10000 // number of images+labels in the TEST file/s
+#define MNIST_IMG_WIDTH 28 // image width in pixel
+#define MNIST_IMG_HEIGHT 28 // image height in pixel
 
 typedef struct MNIST_ImageFileHeader MNIST_ImageFileHeader;
 typedef struct MNIST_LabelFileHeader MNIST_LabelFileHeader;
@@ -26,7 +26,7 @@ typedef uint8_t MNIST_Label;
  * @see http://yann.lecun.com/exdb/mnist/ for details
  */
 struct MNIST_Image{
-    uint8_t pixel[28*28];
+    uint8_t pixel[28 * 28];
 };
 
 /**

@@ -34,10 +34,10 @@ uint32_t flipBytes(uint32_t n){
  */
 
 void readImageFileHeader(FILE *imageFile, MNIST_ImageFileHeader *ifh){
-    ifh->magicNumber =0;
-    ifh->maxImages   =0;
-    ifh->imgWidth    =0;
-    ifh->imgHeight   =0;
+    ifh->magicNumber = 0;
+    ifh->maxImages = 0;
+    ifh->imgWidth = 0;
+    ifh->imgHeight = 0;
     
     fread(&ifh->magicNumber, 4, 1, imageFile);
     ifh->magicNumber = flipBytes(ifh->magicNumber);
@@ -58,8 +58,8 @@ void readImageFileHeader(FILE *imageFile, MNIST_ImageFileHeader *ifh){
  */
 
 void readLabelFileHeader(FILE *imageFile, MNIST_LabelFileHeader *lfh){
-    lfh->magicNumber =0;
-    lfh->maxImages   =0;
+    lfh->magicNumber = 0;
+    lfh->maxImages = 0;
     
     fread(&lfh->magicNumber, 4, 1, imageFile);
     lfh->magicNumber = flipBytes(lfh->magicNumber);
@@ -112,7 +112,7 @@ MNIST_Image getImage(FILE *imageFile){
     MNIST_Image img;
     size_t result;
     result = fread(&img, sizeof(img), 1, imageFile);
-    if (result!=1) {
+    if (result != 1) {
         printf("\nError when reading IMAGE file! Abort!\n");
         exit(1);
     }
@@ -127,7 +127,7 @@ MNIST_Label getLabel(FILE *labelFile){
     MNIST_Label lbl;
     size_t result;
     result = fread(&lbl, sizeof(lbl), 1, labelFile);
-    if (result!=1) {
+    if (result != 1) {
         printf("\nError when reading LABEL file! Abort!\n");
         exit(1);
     }

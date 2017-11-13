@@ -56,13 +56,6 @@ typedef struct {
 Vector getTargetOutput(int targetIndex);
 
 /**
- * @brief Initialize layer by setting all weights to random values [0-1]
- * @param l A pointer to a NN layer
- */
-
-void initLayer(Layer *l);
-
-/**
  * @brief Returns the index of the cell with the hightest output
  * @param l A pointer to a NN layer
  */
@@ -107,7 +100,7 @@ void updateCellWeights(Cell *c, float err);
  * @param target Desired output value
  */
 
-void testCell(Cell *c, MNIST_Image *img, int target);
+void testCell(Cell *c, MNIST_Image *img);
 
 tMax testCellPipelined(Cell *c, MNIST_Image *img, int index, tMax max);
 

@@ -97,7 +97,7 @@ void updateCellWeights(Cell *c, float err){
  * Same as training a cell, but without updating weights (learning)
  */
 
-void testCell(Cell *c, MNIST_Image *img, int target){
+void testCell(Cell *c, MNIST_Image *img){
     setCellInput(c, img);
     calcCellOutput(c);
     
