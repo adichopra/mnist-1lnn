@@ -16,16 +16,6 @@ in the project directory. The binary will be created inside the `/bin` folder an
 $ ./bin/mnist-1lnn
 ```
 
-### Documentation
-
-The  `/doc` folder contains a doxygen configuration file. 
-When you run it with doxygen it will create updated [HTML documentation](https://rawgit.com/mmlind/mnist-1lnn/master/doc/html/index.html) in the `/doc/html` folder.
-
-### Screenshots
-
-The `/screenshots` folder contains screenshots of running the program on my 2010 MacBook Pro.
-
-
 ### MNIST Database
 
 The `/data` folder contains the original MNIST database files.
