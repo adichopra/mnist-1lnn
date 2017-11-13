@@ -12,9 +12,6 @@
 #include "mnist-utils.h"
 #include "1lnn.h"
 
-
-
-
 /**
  * @details Returns an output vector with targetIndex set to 1, all others to 0
  */
@@ -27,41 +24,13 @@ Vector getTargetOutput(int targetIndex){
     return v;
 }
 
-
-
-
-/**
- * @details Initialize layer by setting all weights to random values [0-1]
- * @attention It actually makes no difference whether the weights are
- * initialized to a constant (e.g. 0.5) or to a random number.
- * The result (85% success rate) will not change significantly.
- */
-
-void initLayer(Layer *l){
-    
-    for (int o=0; o<NUMBER_OF_OUTPUT_CELLS; o++){
-        
-        for (int i=0; i<NUMBER_OF_INPUT_CELLS; i++){
-            l->cell[o].input[i]=0;
-            l->cell[o].weight[i]=rand()/(double)(RAND_MAX);
-        }
-        
-        l->cell[o].output = 0;
-        l->cell[o].bias = 0;
-    }
-}
-
-
-
-
 /**
  * @details The output prediction is derived by simply sorting all output values
  * and using the index (=0-9 number) of the highest value as the prediction.
  */
 
 int getLayerPrediction(Layer *l){
-    
-    double maxOut = 0;
+    float maxOut = 0;
     int maxInd = 0;
     
     for (int i=0; i<NUMBER_OF_OUTPUT_CELLS; i++){
@@ -71,13 +40,9 @@ int getLayerPrediction(Layer *l){
             maxInd = i;
         }
     }
-    
+    printf("maxOut=%f\n", maxOut);
     return maxInd;
-    
 }
-
-
-
 
 /**
  * @details Creates an input vector of length NUMBER_OF_INPUT_CELLS
@@ -87,22 +52,17 @@ int getLayerPrediction(Layer *l){
  */
 
 void setCellInput(Cell *c, MNIST_Image *img){
-    
     for (int i=0; i<NUMBER_OF_INPUT_CELLS; i++){
         c->input[i] = img->pixel[i] ? 1 : 0;
     }
 }
-
-
-
 
 /**
  * @details Calculates a cell's output by suming all input-weight-products
  * and normalizes to [0-1].
  */
 
-void calcCellOutput(Cell *c){
-    
+float calcCellOutput(Cell *c){
     c->output=0;
     
     for (int i=0; i<NUMBER_OF_INPUT_CELLS; i++){
@@ -110,56 +70,27 @@ void calcCellOutput(Cell *c){
     }
     
     c->output /= NUMBER_OF_INPUT_CELLS;             // normalize output (0-1)
+    return c->output;
 }
-
-
-
 
 /**
  * @details Returns the difference between a target value and the cell's ouput
  */
 
-double getCellError(Cell *c, int target){
-
-    double err = target - c->output;
-
+float getCellError(Cell *c, int target){
+    float err = target - c->output;
     return err;
 }
-
-
-
 
 /**
  * @details Updates a cell's weights based on given error and LEARNING_RATE
  */
 
-void updateCellWeights(Cell *c, double err){
-    
+void updateCellWeights(Cell *c, float err){
     for (int i=0; i<NUMBER_OF_INPUT_CELLS; i++){
         c->weight[i] += LEARNING_RATE * c->input[i] * err;
     }
 }
-
-
-
-
-/**
- * @details Performs the training algorithm:
- * feeding input, calculate output, calculate error, update weights)
- */
-
-void trainCell(Cell *c, MNIST_Image *img, int target){
-    
-    setCellInput(c, img);
-    calcCellOutput(c);
-    
-    // learning (by updating the weights)
-    double err = getCellError(c, target);
-    updateCellWeights(c, err);
-}
-
-
-
 
 /**
  * @details Performs the testing of the trained network
@@ -167,8 +98,26 @@ void trainCell(Cell *c, MNIST_Image *img, int target){
  */
 
 void testCell(Cell *c, MNIST_Image *img, int target){
-    
     setCellInput(c, img);
     calcCellOutput(c);
     
+}
+
+tMax testCellPipelined(Cell *c, MNIST_Image *img, int index, tMax max) {
+    setCellInput(c, img);
+    float output = calcCellOutput(c);
+    if (output > max.val) {
+        max = (tMax) {.val = output, .idx = index};
+    }
+    return max;
+}
+
+void printWeights(Layer *l){
+    for (int i = 0; i < NUMBER_OF_OUTPUT_CELLS; i += 1) {
+        printf("CELL #%d:\n[", i);
+        for (int j = 0; j < NUMBER_OF_INPUT_CELLS; j+= 1) {
+            printf("%f, ", l->cell[i].weight[j]);
+        }
+        printf("]\n");
+    }
 }
