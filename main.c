@@ -73,7 +73,7 @@ void testLayer(Layer *l){
         
         printf("\n      Prediction: %d   Actual: %d ",predictedNum, lbl);
         
-        displayProgress(imgCount, errCount, 5, 66);
+        displayProgress(imgCount, errCount);
         
     }
     
@@ -102,7 +102,6 @@ Layer getLayer() {
  */
 
 int main(int argc, const char * argv[]) {
-    // clear screen of terminal window
     printf("    MNIST-1LNN: a simple 1-layer neural network processing the MNIST handwriting images\n");
     Layer outputLayer = getLayer();
     testLayer(&outputLayer);    
