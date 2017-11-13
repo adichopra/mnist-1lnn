@@ -26,8 +26,16 @@
 #include <math.h>
 
 #include "mnist-utils.h"
-#include "mnist-stats.h"
 #include "1lnn.h"
+
+/**
+ * @details Outputs image recognition progress and error count
+ */
+
+void displayProgress(int imgCount, int errCount){    
+    float successRate = 1 - ((float)errCount/(float)(imgCount+1));
+    printf("Result: Correct=%5d  Incorrect=%5d  Success-Rate=%5.2f%% \n",imgCount+1-errCount, errCount, successRate*100);
+}
 
 /**
  * @details Tests a layer by looping through and testing its cells
