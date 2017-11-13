@@ -5,7 +5,6 @@
  * @date July 2015
  */
 
-
 #include <stdio.h>
 
 #define NUMBER_OF_INPUT_CELLS 784   ///< use 28*28 input cells (= number of pixels per MNIST image)
@@ -15,12 +14,13 @@
 typedef struct Cell Cell;
 typedef struct Layer Layer;
 typedef struct Vector Vector;
+typedef struct tMax tMax;
 
 /**
  * @brief Core unit of the neural network (neuron and synapses)
  */
 
-struct Cell{
+struct Cell {
     float input [NUMBER_OF_INPUT_CELLS];
     float weight[NUMBER_OF_INPUT_CELLS];
     float output;
@@ -31,7 +31,7 @@ struct Cell{
  * @brief The single (output) layer of this network (a layer is number cells)
  */
 
-struct Layer{
+struct Layer {
     Cell cell[NUMBER_OF_OUTPUT_CELLS];
 };
 
@@ -39,21 +39,14 @@ struct Layer{
  * @brief Data structure containing defined number of integer values (the output vector contains values for 0-9)
  */
 
-struct Vector{
+struct Vector {
     int val[NUMBER_OF_OUTPUT_CELLS];
 };
 
-typedef struct {
+struct tMax{
     float val;
     int idx;
-} tMax;
-
-/**
- * @brief Returns an output vector with targetIndex set to 1, all others to 0
- * @param targetIndex Index of the output that is to be set to 1
- */
-
-Vector getTargetOutput(int targetIndex);
+};
 
 /**
  * @brief Returns the index of the cell with the hightest output
@@ -86,14 +79,6 @@ float calcCellOutput(Cell *c);
 float getCellError(Cell *c, int target);
 
 /**
- * @brief Updates a cell's weights based on given error and LEARNING_RATE
- * @param c The cell whose weights are to be updated.
- * @param err The error (difference between desired output and actual output
- */
-
-void updateCellWeights(Cell *c, float err);
-
-/**
  * @brief Performs the testing of the trained network
  * @param c Pointer to the cell that is to be trained
  * @param img Pointer to the image that is to be processed
@@ -105,4 +90,3 @@ void testCell(Cell *c, MNIST_Image *img);
 tMax testCellPipelined(Cell *c, MNIST_Image *img, int index, tMax max);
 
 void printWeights(Layer *l);
-

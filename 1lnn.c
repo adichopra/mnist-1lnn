@@ -11,36 +11,22 @@
 
 #include "mnist-utils.h"
 #include "1lnn.h"
-
-/**
- * @details Returns an output vector with targetIndex set to 1, all others to 0
- */
-
-Vector getTargetOutput(int targetIndex){
-    Vector v;
-    for (int i=0; i<NUMBER_OF_OUTPUT_CELLS; i++){
-        v.val[i] = (i==targetIndex) ? 1 : 0;
-    }
-    return v;
-}
+// #include "vec_mul.h"
 
 /**
  * @details The output prediction is derived by simply sorting all output values
  * and using the index (=0-9 number) of the highest value as the prediction.
  */
 
-int getLayerPrediction(Layer *l){
+int getLayerPrediction(Layer *l) {
     float maxOut = 0;
     int maxInd = 0;
-    
-    for (int i=0; i<NUMBER_OF_OUTPUT_CELLS; i++){
-        
-        if (l->cell[i].output > maxOut){
+    for (int i = 0; i < NUMBER_OF_OUTPUT_CELLS; i += 1) {
+        if (l->cell[i].output > maxOut) {
             maxOut = l->cell[i].output;
             maxInd = i;
         }
     }
-    printf("maxOut=%f\n", maxOut);
     return maxInd;
 }
 
@@ -51,10 +37,21 @@ int getLayerPrediction(Layer *l){
  * Scalar pixel intensity [=grey-scale] is ignored, only 0 or 1 [=black-white].
  */
 
-void setCellInput(Cell *c, MNIST_Image *img){
-    for (int i=0; i<NUMBER_OF_INPUT_CELLS; i++){
+void setCellInput(Cell *c, MNIST_Image *img) {
+    for (int i = 0; i < NUMBER_OF_INPUT_CELLS; i += 1) {
         c->input[i] = img->pixel[i] ? 1 : 0;
     }
+}
+
+float dotProduct(float *a, float *b, int length) {
+    // float result[length];
+    // vec_mul_asm(length, result, c->input, c->weight);
+    float output = 0;
+    for (int i = 0; i < length; i += 1) {
+        // output += result[i];
+        output += a[i] * b[i];
+    }
+    return output;
 }
 
 /**
@@ -62,13 +59,8 @@ void setCellInput(Cell *c, MNIST_Image *img){
  * and normalizes to [0-1].
  */
 
-float calcCellOutput(Cell *c){
-    c->output=0;
-    
-    for (int i=0; i<NUMBER_OF_INPUT_CELLS; i++){
-        c->output += c->input[i] * c->weight[i];
-    }
-    
+float calcCellOutput(Cell *c) {
+    c->output = dotProduct(c->input, c->weight, NUMBER_OF_INPUT_CELLS);
     c->output /= NUMBER_OF_INPUT_CELLS;             // normalize output (0-1)
     return c->output;
 }
@@ -77,27 +69,18 @@ float calcCellOutput(Cell *c){
  * @details Returns the difference between a target value and the cell's ouput
  */
 
-float getCellError(Cell *c, int target){
+float getCellError(Cell *c, int target) {
     float err = target - c->output;
     return err;
 }
 
-/**
- * @details Updates a cell's weights based on given error and LEARNING_RATE
- */
-
-void updateCellWeights(Cell *c, float err){
-    for (int i=0; i<NUMBER_OF_INPUT_CELLS; i++){
-        c->weight[i] += LEARNING_RATE * c->input[i] * err;
-    }
-}
 
 /**
  * @details Performs the testing of the trained network
  * Same as training a cell, but without updating weights (learning)
  */
 
-void testCell(Cell *c, MNIST_Image *img){
+void testCell(Cell *c, MNIST_Image *img) {
     setCellInput(c, img);
     calcCellOutput(c);
     
