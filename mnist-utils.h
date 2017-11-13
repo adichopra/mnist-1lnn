@@ -62,23 +62,23 @@ struct MNIST_LabelFileHeader{
  * @see http://yann.lecun.com/exdb/mnist/ for definition details
  */
 
-FILE *openMNISTImageFile(char *fileName);
+// FILE *openMNISTImageFile(char *fileName);
 
 /**
  * @brief Read MNIST label file header
  * @see http://yann.lecun.com/exdb/mnist/ for definition details
  */
 
-FILE *openMNISTLabelFile(char *fileName);
+// FILE *openMNISTLabelFile(char *fileName);
 
 /**
  * @brief Returns the next image in given MNIST image file
  */
 
-MNIST_Image getImage(FILE *imageFile);
+// MNIST_Image getImage(FILE *imageFile);
 
 /**
  * @brief Returns the next label in given MNIST label file
  */
 
-MNIST_Label getLabel(FILE *labelFile);
+// MNIST_Label getLabel(FILE *labelFile);

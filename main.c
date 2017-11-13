@@ -59,26 +59,26 @@ int classifyImage(MNIST_Image img, Layer *l) {
  * @param l A pointer to the layer that is to be training
  */
 
-void testLayer(Layer *l){
-    // open MNIST files
-    FILE *imageFile, *labelFile;
-    imageFile = openMNISTImageFile(MNIST_TESTING_SET_IMAGE_FILE_NAME);
-    labelFile = openMNISTLabelFile(MNIST_TESTING_SET_LABEL_FILE_NAME);
-    int errCount = 0;
-    // Loop through all images in the file
-    for (int imgCount = 0; imgCount < MNIST_MAX_TESTING_IMAGES; imgCount += 1){
-        // Reading next image and corresponding label
-        MNIST_Image img = getImage(imageFile);
-        MNIST_Label lbl = getLabel(labelFile);
-        int predictedNum = classifyImage(img, l);
-        if (predictedNum!=lbl) errCount++;
-        printf("Prediction: %d   Actual: %d\n",predictedNum, lbl);        
-        displayProgress(imgCount, errCount);
-    }
-    // Close files
-    fclose(imageFile);
-    fclose(labelFile);
-}
+// void testLayer(Layer *l){
+//     // open MNIST files
+//     FILE *imageFile, *labelFile;
+//     imageFile = openMNISTImageFile(MNIST_TESTING_SET_IMAGE_FILE_NAME);
+//     labelFile = openMNISTLabelFile(MNIST_TESTING_SET_LABEL_FILE_NAME);
+//     int errCount = 0;
+//     // Loop through all images in the file
+//     for (int imgCount = 0; imgCount < MNIST_MAX_TESTING_IMAGES; imgCount += 1){
+//         // Reading next image and corresponding label
+//         MNIST_Image img = getImage(imageFile);
+//         MNIST_Label lbl = getLabel(labelFile);
+//         int predictedNum = classifyImage(img, l);
+//         if (predictedNum!=lbl) errCount++;
+//         printf("Prediction: %d   Actual: %d\n",predictedNum, lbl);        
+//         displayProgress(imgCount, errCount);
+//     }
+//     // Close files
+//     fclose(imageFile);
+//     fclose(labelFile);
+// }
 
 Layer getLayer() {
     return (Layer) {
@@ -102,6 +102,7 @@ Layer getLayer() {
 int main(int argc, const char * argv[]) {
     printf("MNIST-1LNN: a simple 1-layer neural network processing the MNIST handwriting images\n");
     Layer outputLayer = getLayer();
-    testLayer(&outputLayer);    
+    // testLayer(&outputLayer);
+    printf("result = %d\n", classifyImage((MNIST_Image) {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,97,96,77,118,61,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,90,138,235,235,235,235,235,235,251,251,248,254,245,235,190,21,0,0,0,0,0,0,0,0,0,0,0,140,251,254,254,254,254,254,254,254,254,254,254,254,254,254,254,189,23,0,0,0,0,0,0,0,0,0,0,226,254,208,199,199,199,199,139,61,61,61,61,61,128,222,254,254,189,21,0,0,0,0,0,0,0,0,0,38,82,13,0,0,0,0,0,0,0,0,0,0,0,34,213,254,254,115,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,84,254,254,234,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,84,254,254,234,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,106,157,254,254,243,51,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,25,117,228,228,228,253,254,254,254,254,240,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,68,119,220,254,254,254,254,254,254,254,254,254,142,0,0,0,0,0,0,0,0,0,0,0,0,0,37,187,253,254,254,254,223,206,206,75,68,215,254,254,117,0,0,0,0,0,0,0,0,0,0,0,0,113,219,254,242,227,115,89,31,0,0,0,0,200,254,241,41,0,0,0,0,0,0,0,0,0,0,0,0,169,254,176,62,0,0,0,0,0,0,0,48,231,254,234,0,0,0,0,0,0,0,0,0,0,0,0,0,18,124,0,0,0,0,0,0,0,0,0,84,254,254,166,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,139,254,238,57,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,210,250,254,168,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,242,254,239,57,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,89,251,241,86,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,206,246,157,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,117,69,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, &outputLayer));
     return 0;
 }
