@@ -20,3 +20,7 @@ $ ./bin/mnist-1lnn
 
 The `/data` folder contains the original MNIST database files.
 
+### Build in spike
+- copy the vec-nn/ folder into riscv-tests/benchmarks/
+- make -j16
+- spike --extension=hwacha vec-nn.riscv
