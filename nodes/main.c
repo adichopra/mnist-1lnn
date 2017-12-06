@@ -10,9 +10,14 @@
 // #include "vec_mul.h"
 
 uint64_t in_packets[MNIST_MAX_TESTING_IMAGES][PACKET_WORDS];
+uint64_t out_packets[MNIST_MAX_TESTING_IMAGES][PACKET_WORDS];
+uint64_t srcmac;
 int total_req = 0;
 int total_comp = 0;
+int total_req2 = 0;
+int total_comp2 = 0;
 char inflight[MNIST_MAX_TESTING_IMAGES];
+char inflight2[MNIST_MAX_TESTING_IMAGES];
 
 // non-vectorized vector multiply
 void vec_mul_asm(int n, float result[], float input_X[], float input_Y[]) {
@@ -28,7 +33,8 @@ float dotProduct(float *a, float *b, int length) {
     for (int i = 0; i < length; i += 1) {
         output += result[i];
     }
-    printf("output=%f\n", output);
+    // printf("output=%x\n", *(int *)&output);
+    printf("output=%d\n", (int) output);
     return output;
 }
 
@@ -56,20 +62,20 @@ float calcCellOutput(Cell *c) {
     return c->output;
 }
 
-
-tMax testCell(Cell *c, MNIST_Image *img, int index, tMax max) {
+void testCell(Cell *c, MNIST_Image *img, int index, tMax *max) {
     if (index == 0) {
         setCellInput(c, img);
-        max.idx = 0;
-        max.val = calcCellOutput(c);
+        max->idx = 0;
+        max->val = calcCellOutput(c);
     } else {
         setCellInput(c, img);
         float output = calcCellOutput(c);
-        if (output > max.val) {
-            max = (tMax) {.val = output, .idx = index};
+        if (output > max->val) {
+            printf("%d > %d apparently\n", (int) (output * NUMBER_OF_INPUT_CELLS), (int) (max->val * NUMBER_OF_INPUT_CELLS));
+            max->val = output;
+            max->idx = index;
         }
     }
-    return max;
 }
 
 Cell getCell(int index) {
@@ -88,29 +94,29 @@ Cell getCell(int index) {
     return cells[index];
 }
 
-// MNIST_Image getImage() {
-//     // TODO(adichopra): recv from NIC
-//     return (MNIST_Image) {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,97,96,77,118,61,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,90,138,235,235,235,235,235,235,251,251,248,254,245,235,190,21,0,0,0,0,0,0,0,0,0,0,0,140,251,254,254,254,254,254,254,254,254,254,254,254,254,254,254,189,23,0,0,0,0,0,0,0,0,0,0,226,254,208,199,199,199,199,139,61,61,61,61,61,128,222,254,254,189,21,0,0,0,0,0,0,0,0,0,38,82,13,0,0,0,0,0,0,0,0,0,0,0,34,213,254,254,115,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,84,254,254,234,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,84,254,254,234,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,106,157,254,254,243,51,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,25,117,228,228,228,253,254,254,254,254,240,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,68,119,220,254,254,254,254,254,254,254,254,254,142,0,0,0,0,0,0,0,0,0,0,0,0,0,37,187,253,254,254,254,223,206,206,75,68,215,254,254,117,0,0,0,0,0,0,0,0,0,0,0,0,113,219,254,242,227,115,89,31,0,0,0,0,200,254,241,41,0,0,0,0,0,0,0,0,0,0,0,0,169,254,176,62,0,0,0,0,0,0,0,48,231,254,234,0,0,0,0,0,0,0,0,0,0,0,0,0,18,124,0,0,0,0,0,0,0,0,0,84,254,254,166,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,139,254,238,57,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,210,250,254,168,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,242,254,239,57,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,89,251,241,86,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,206,246,157,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,117,69,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-// }
-
-void compute_result(Message *msg) {
+void compute_and_store_result(Message *msg, Cell *c0, Cell *c1, int id) {
     MNIST_Image img = msg->img;
     tMax max = msg->max;
 
-    max = testCell(&c0, &img, 0, max);
-    max = testCell(&c1, &img, 1, max);
+    testCell(c0, &img, START, &max);
+    testCell(c1, &img, START + 1, &max);
 
     printf("result = %d\n", max.idx);
 
-    // sendResult();
+    uint64_t *packet = out_packets[id];
+
+    packet[0] = NEXT_MACADDR << 16;
+    packet[1] = srcmac | (0x1008L << 48);
+    packet[2] = id;
+
+    Message msg2 = (Message) {.img = img, .max = max};
+
+    memcpy(packet + 24, &msg2, sizeof msg2);
 }
 
-void sendResult() {
-    // TODO(adichopra): send from NIC
-    return;
-}
 
-static inline void process_loop(void) {
+static inline void process_loop(Cell *c0, Cell *c1) {
+    printf("process_loop\n");
     uint16_t counts, recv_req, recv_comp;
     static int req_id = 0, comp_id = 0;
     int len;
@@ -121,10 +127,14 @@ static inline void process_loop(void) {
 
     for (int i = 0; i < recv_comp; i++) {
         len = nic_complete_recv();
+        printf("completed recv #%d\n", comp_id);
         if (len != PACKET_WORDS * sizeof(uint64_t)) {
             printf("Incorrectly sized packet\n");
             abort();
         }
+
+        compute_and_store_result((Message*) (in_packets[comp_id] + 24), c0, c1, comp_id);
+
         inflight[comp_id] = 0;
         comp_id = (comp_id + 1) % MNIST_MAX_TESTING_IMAGES;
         total_comp++;
@@ -135,34 +145,85 @@ static inline void process_loop(void) {
             break;
         nic_post_recv((uint64_t) in_packets[req_id]);
 
-        compute_result((Message*) (in_packets[req_id] + 24));
-
         inflight[req_id] = 1;
         req_id = (req_id + 1) % MNIST_MAX_TESTING_IMAGES;
         total_req++;
     }
 }
 
-/**
- * Main function to run MNIST-1LNN
- */
+static void process_loop2(void) {
+    printf("process_loop2\n");
+    uint16_t counts, send_req, send_comp;
+    static int req_id = 0, comp_id = 0;
+
+    counts = nic_counts();
+    send_req  = (counts >> NIC_COUNT_SEND_REQ)  & 0xf;
+    send_comp = (counts >> NIC_COUNT_SEND_COMP) & 0xf;
+
+    for (int i = 0; i < send_comp; i++) {
+        printf("loop2.1\n");
+        nic_complete_send();
+        printf("completed send #%d\n", comp_id);
+        inflight2[comp_id] = 0;
+        comp_id = (comp_id + 1) % MNIST_MAX_TESTING_IMAGES;
+        total_comp2++;
+    }
+
+    for (int i = 0; i < send_req; i++) {
+        printf("loop2.2\n");
+        if (inflight2[req_id] || total_req2 >= total_comp) {
+            printf("loop2.2 break\n");
+            break;
+        }
+        printf("loop2.2 send\n");
+        nic_post_send((uint64_t) out_packets[req_id], PACKET_WORDS * 8);
+        printf("loop2.2 sent\n");
+        inflight2[req_id] = 1;
+        req_id = (req_id + 1) % MNIST_MAX_TESTING_IMAGES;
+        total_req2++;
+    }
+}
 
 int main(int argc, const char * argv[]) {
+    uint64_t cycle;
+    int counts, comp;
+
+    srcmac = nic_macaddr();
+
     Cell c0 = getCell(START);
     Cell c1 = getCell(START + 1);
 
     printf("Computing cells %d and %d.\n", START, START + 1);
-    uint64_t cycle;
 
     memset(inflight, 0, MNIST_MAX_TESTING_IMAGES);
+    memset(inflight2, 0, MNIST_MAX_TESTING_IMAGES);
 
     do {
-        process_loop();
+        if (total_comp < MNIST_MAX_TESTING_IMAGES) {
+            printf("%d sent, process_loop again\n", total_comp);
+            process_loop(&c0, &c1);
+        }
+        printf("%d sent, process_loop2 again\n", total_comp2);
+        process_loop2();
         cycle = rdcycle();
-    } while (cycle < END_CYCLE);
+    } while (total_comp2 < MNIST_MAX_TESTING_IMAGES);
 
+    while (total_comp2 < total_req2) {
+        counts = nic_counts();
+        comp = (counts >> NIC_COUNT_SEND_COMP) & 0xf;
+
+        for (int i = 0; i < comp; i++) {
+            nic_complete_send();
+            total_comp2++;
+        }
+    }
     printf("cycles: %lu, completed: %d\n",
             cycle, total_comp);
-
+    while (1) {
+        cycle = rdcycle();
+        if (cycle % 10000 == 0) {
+            printf("looping...\n");
+        }
+    }
     return 0;
 }

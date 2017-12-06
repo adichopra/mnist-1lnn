@@ -2,16 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 #include "mnist.h"
 #include "data.h"
+#include "mmio.h"
+#include "encoding.h"
 #include "nic.h"
 
 uint64_t out_packets[MNIST_MAX_TESTING_IMAGES][PACKET_WORDS];
-uint64_t in_packet[3];
-char completed[MNIST_MAX_TESTING_IMAGES];
-int total_comp = 0;
-int total_req = 0;
+int total_req = 0, total_comp = 0;
+char inflight[MNIST_MAX_TESTING_IMAGES];
+
+uint64_t in_packets[MNIST_MAX_TESTING_IMAGES][PACKET_WORDS];
+int total_req2 = 0, total_comp2 = 0;
+char inflight2[MNIST_MAX_TESTING_IMAGES];
 
 // uint64_t nic_macaddr() {
 //     return 0x200006d1200;
@@ -32,37 +37,69 @@ static void fill_packet(uint64_t *packet, uint64_t srcmac, uint64_t dstmac, int 
     Message msg = (Message) {.img = img, .max = max};
 
     memcpy(packet + 24, &msg, sizeof msg);
-
-    // tMax max2 = ((Message*) (packet + 24))->max;
-    // printf("%d\n", max2.idx);
-}
-
-static inline void post_send(uint64_t addr, uint64_t len) {
-    uint64_t request = ((len & 0x7fff) << 48) | (addr & 0xffffffffffffL);
-    reg_write64(SIMPLENIC_SEND_REQ, request);
 }
 
 static void process_loop(void) {
     uint16_t counts, send_req, send_comp;
-    static int req_id = 0;
-    static int comp_id = 0;
+    static int req_id = 0, comp_id = 0;
 
-    counts = reg_read16(SIMPLENIC_COUNTS);
-    send_req  = counts & 0xf;
-    send_comp = (counts >> 8) & 0xf;
+    counts = nic_counts();
+    send_req  = (counts >> NIC_COUNT_SEND_REQ)  & 0xf;
+    send_comp = (counts >> NIC_COUNT_SEND_COMP) & 0xf;
 
-    for (int i = 0; i < send_req && total_req < MNIST_MAX_TESTING_IMAGES; i++) {
-        printf("sending %d\n", i);
-        post_send((uint64_t) out_packets[req_id], PACKET_WORDS * 8);
-        req_id++;
-        total_req++;
+    for (int i = 0; i < send_comp; i++) {
+        printf("sending #%d\n", comp_id);
+        nic_complete_send();
+        printf("sent #%d\n", comp_id);
+        inflight[comp_id] = 0;
+        comp_id = (comp_id + 1) % MNIST_MAX_TESTING_IMAGES;
+        total_comp++;
     }
 
-    for (int i = 0; i < send_comp && total_comp < MNIST_MAX_TESTING_IMAGES; i++) {
-        reg_read16(SIMPLENIC_SEND_COMP);
-        completed[comp_id] = 1;
-        comp_id++;
-        total_comp++;
+    for (int i = 0; i < send_req; i++) {
+        if (inflight[req_id])
+            break;
+        printf("posting #%d\n", req_id);
+        nic_post_send((uint64_t) out_packets[req_id], PACKET_WORDS * 8);
+        printf("posted #%d\n", req_id);
+        inflight[req_id] = 1;
+        req_id = (req_id + 1) % MNIST_MAX_TESTING_IMAGES;
+        total_req++;
+    }
+}
+
+static inline void process_loop2(void) {
+    uint16_t counts, recv_req, recv_comp;
+    static int req_id = 0, comp_id = 0;
+    int len;
+
+    counts = nic_counts();
+    recv_req  = (counts >> NIC_COUNT_RECV_REQ)  & 0xf;
+    recv_comp = (counts >> NIC_COUNT_RECV_COMP) & 0xf;
+
+    for (int i = 0; i < recv_comp; i++) {
+        len = nic_complete_recv();
+        printf("completed recv #%d\n", comp_id);
+        if (len != PACKET_WORDS * sizeof(uint64_t)) {
+            printf("Incorrectly sized packet\n");
+            abort();
+        }
+
+        printf("Result = %d\n", ((Message*) (in_packets[comp_id] + 24))->max.idx);
+
+        inflight2[comp_id] = 0;
+        comp_id = (comp_id + 1) % MNIST_MAX_TESTING_IMAGES;
+        total_comp2++;
+    }
+
+    for (int i = 0; i < recv_req; i++) {
+        if (inflight2[req_id])
+            break;
+        nic_post_recv((uint64_t) in_packets[req_id]);
+
+        inflight2[req_id] = 1;
+        req_id = (req_id + 1) % MNIST_MAX_TESTING_IMAGES;
+        total_req2++;
     }
 }
 
@@ -79,42 +116,55 @@ void getResult() {
 }
 
 int main(int argc, const char * argv[]) {
-    printf("BEGIN FIRSTNODE\n");
     uint64_t srcmac = nic_macaddr();
     uint64_t dstmac = NEXT_MACADDR;
+    uint64_t cycle;
+    int counts, comp;
 
-    memset(in_packet, 0, sizeof(uint64_t) * 3);
-    memset(completed, 0, MNIST_MAX_TESTING_IMAGES);
+    printf("BEGIN FIRSTNODE\n");
+
+    memset(inflight, 0, MNIST_MAX_TESTING_IMAGES);
     for (int i = 0; i < MNIST_MAX_TESTING_IMAGES; i++) {
         fill_packet(out_packets[i], srcmac, dstmac, i);
     }
 
     asm volatile ("fence");
 
+    do {
+        cycle = rdcycle();
+    } while (cycle < START_CYCLE);
+
     printf("Start MNIST\n");
 
-    reg_write64(SIMPLENIC_RECV_REQ, (uint64_t) in_packet);
 
-    while (total_comp < MNIST_MAX_TESTING_IMAGES)
-        printf("process_loop again\n");
-        process_loop();
+    do {
+        if (total_comp < MNIST_MAX_TESTING_IMAGES) {
+            printf("%d sent, process_loop again\n", total_comp);
+            process_loop();
+        }
+        printf("%d recvd, process_loop2 again\n", total_comp2);
+        process_loop2();
+        cycle = rdcycle();
+    } while (total_comp2 < MNIST_MAX_TESTING_IMAGES);
 
-    nic_recv(in_packet);
+    printf("cycles: %lu, completed: %d\n",
+            cycle, total_comp);
 
-    printf("End MNIST\n");
+    while (total_comp < total_req || total_comp2 < total_req2) {
+        printf("finish_comp\n");
+        counts = nic_counts();
+        comp = (counts >> NIC_COUNT_SEND_COMP) & 0xf;
 
-    for (int i = 0; i < MNIST_MAX_TESTING_IMAGES; i++) {
-        if (!completed[i])
-            printf("Packet %d was not sent\n", i);
+        for (int i = 0; i < comp; i++) {
+            printf("finish_comp #%d\n", i);
+            nic_complete_send();
+            total_comp++;
+        }
     }
 
-    nic_recv(in_packet);
+    printf("2: cycles: %lu, completed: %d\n",
+            cycle, total_comp);
 
 
-    // for (int imgCount = 0; imgCount < MNIST_MAX_TESTING_IMAGES; imgCount += 1){
-    //     MNIST_Image img = getImage(imgCount);
-    //     sendImage(img);
-    // }
-    getResult();
     return 0;
 }
