@@ -11,7 +11,7 @@
 
 #include "mnist-utils.h"
 #include "1lnn.h"
-#include "vec_mul.h"
+// #include "vec_mul.h"
 
 /**
  * @details The output prediction is derived by simply sorting all output values
@@ -44,11 +44,12 @@ void setCellInput(Cell *c, MNIST_Image *img) {
 }
 
 float dotProduct(float *a, float *b, int length) {
-    float result[length];
-    vec_mul_asm(length, result, a, b);
+    // float result[length];
+    // vec_mul_asm(length, result, a, b);
     float output = 0;
     for (int i = 0; i < length; i += 1) {
-        output += result[i];
+        // output += result[i];
+        output += a[i] * b[i];
     }
     return output;
 }
