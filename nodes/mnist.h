@@ -6,6 +6,7 @@
 #define MNIST_IMG_WIDTH 28  // image width in pixels
 #define MNIST_IMG_HEIGHT 28 // image height in pixels
 #define NUMBER_OF_INPUT_CELLS 784   ///< use 28*28 input cells (= number of pixels per MNIST image)
+// SET NUMBER_OF_INPUT_CELLS TO 680 FOR HWACHA
 
 typedef struct MNIST_Image MNIST_Image;
 typedef struct MNIST_ImageFileHeader MNIST_ImageFileHeader;
