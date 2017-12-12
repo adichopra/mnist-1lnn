@@ -9,15 +9,15 @@
 #include "encoding.h"
 // #include "vec_mul.h"
 
-uint64_t in_packets[MNIST_MAX_TESTING_IMAGES][PACKET_WORDS];
 uint64_t out_packets[MNIST_MAX_TESTING_IMAGES][PACKET_WORDS];
-uint64_t srcmac;
-int total_req = 0;
-int total_comp = 0;
-int total_req2 = 0;
-int total_comp2 = 0;
+int total_req = 0, total_comp = 0;
 char inflight[MNIST_MAX_TESTING_IMAGES];
+
+uint64_t in_packets[MNIST_MAX_TESTING_IMAGES][PACKET_WORDS];
+int total_req2 = 0, total_comp2 = 0;
 char inflight2[MNIST_MAX_TESTING_IMAGES];
+
+uint64_t srcmac;
 
 // non-vectorized vector multiply
 void vec_mul_asm(int n, float result[], float input_X[], float input_Y[]) {
@@ -34,7 +34,7 @@ float dotProduct(float *a, float *b, int length) {
         output += result[i];
     }
     // printf("output=%x\n", *(int *)&output);
-    printf("output=%d\n", (int) output);
+    // printf("output=%d\n", (int) output);
     return output;
 }
 
@@ -71,7 +71,6 @@ void testCell(Cell *c, MNIST_Image *img, int index, tMax *max) {
         setCellInput(c, img);
         float output = calcCellOutput(c);
         if (output > max->val) {
-            printf("%d > %d apparently\n", (int) (output * NUMBER_OF_INPUT_CELLS), (int) (max->val * NUMBER_OF_INPUT_CELLS));
             max->val = output;
             max->idx = index;
         }
@@ -101,7 +100,7 @@ void compute_and_store_result(Message *msg, Cell *c0, Cell *c1, int id) {
     testCell(c0, &img, START, &max);
     testCell(c1, &img, START + 1, &max);
 
-    printf("result = %d\n", max.idx);
+    // printf("result = %d\n", max.idx);
 
     uint64_t *packet = out_packets[id];
 
@@ -116,7 +115,7 @@ void compute_and_store_result(Message *msg, Cell *c0, Cell *c1, int id) {
 
 
 static inline void process_loop(Cell *c0, Cell *c1) {
-    printf("process_loop\n");
+    // printf("process_loop\n");
     uint16_t counts, recv_req, recv_comp;
     static int req_id = 0, comp_id = 0;
     int len;
@@ -125,9 +124,11 @@ static inline void process_loop(Cell *c0, Cell *c1) {
     recv_req  = (counts >> NIC_COUNT_RECV_REQ)  & 0xf;
     recv_comp = (counts >> NIC_COUNT_RECV_COMP) & 0xf;
 
+    // printf("recv_req= %d // recv_comp=%d\n", recv_req, recv_comp);
+
     for (int i = 0; i < recv_comp; i++) {
         len = nic_complete_recv();
-        printf("completed recv #%d\n", comp_id);
+        // printf("nic_complete_recv [i=%d, comp_id=%d, recv_req=%d, recv_comp=%d]\n", i, comp_id, recv_req, recv_comp);
         if (len != PACKET_WORDS * sizeof(uint64_t)) {
             printf("Incorrectly sized packet\n");
             abort();
@@ -144,6 +145,7 @@ static inline void process_loop(Cell *c0, Cell *c1) {
         if (inflight[req_id])
             break;
         nic_post_recv((uint64_t) in_packets[req_id]);
+        // printf("nic_post_recv [i=%d, req_id=%d, recv_req=%d, recv_comp=%d]\n", i, req_id, recv_req, recv_comp);
 
         inflight[req_id] = 1;
         req_id = (req_id + 1) % MNIST_MAX_TESTING_IMAGES;
@@ -152,7 +154,7 @@ static inline void process_loop(Cell *c0, Cell *c1) {
 }
 
 static void process_loop2(void) {
-    printf("process_loop2\n");
+    // printf("process_loop2\n");
     uint16_t counts, send_req, send_comp;
     static int req_id = 0, comp_id = 0;
 
@@ -161,23 +163,21 @@ static void process_loop2(void) {
     send_comp = (counts >> NIC_COUNT_SEND_COMP) & 0xf;
 
     for (int i = 0; i < send_comp; i++) {
-        printf("loop2.1\n");
         nic_complete_send();
-        printf("completed send #%d\n", comp_id);
+        // printf("nic_complete_send [i=%d, comp_id=%d, send_req=%d, send_comp=%d]\n", i, comp_id, send_req, send_comp);
         inflight2[comp_id] = 0;
         comp_id = (comp_id + 1) % MNIST_MAX_TESTING_IMAGES;
         total_comp2++;
     }
 
     for (int i = 0; i < send_req; i++) {
-        printf("loop2.2\n");
+        // printf("loop2.2\n");
         if (inflight2[req_id] || total_req2 >= total_comp) {
-            printf("loop2.2 break\n");
+            // printf("loop2.2 break\n");
             break;
         }
-        printf("loop2.2 send\n");
         nic_post_send((uint64_t) out_packets[req_id], PACKET_WORDS * 8);
-        printf("loop2.2 sent\n");
+        // printf("nic_post_send [i=%d, req_id=%d, send_req=%d, send_comp=%d]\n", i, req_id, send_req, send_comp);
         inflight2[req_id] = 1;
         req_id = (req_id + 1) % MNIST_MAX_TESTING_IMAGES;
         total_req2++;
@@ -199,6 +199,9 @@ int main(int argc, const char * argv[]) {
     memset(inflight2, 0, MNIST_MAX_TESTING_IMAGES);
 
     do {
+        // if (cycle % 1000000 == 0) {
+        //     printf("%d sent, process_loop again\n", total_comp);
+        // }
         if (total_comp < MNIST_MAX_TESTING_IMAGES) {
             printf("%d sent, process_loop again\n", total_comp);
             process_loop(&c0, &c1);

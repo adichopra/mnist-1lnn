@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #define MNIST_TESTING_SET_IMAGE_FILE_NAME "data/t10k-images-idx3-ubyte" // MNIST image testing file in the data folder
-#define MNIST_MAX_TESTING_IMAGES 10000 // number of images+labels in the TEST file/s
+// #define MNIST_MAX_TESTING_IMAGES 10 // number of images+labels in the TEST file/s
 #define MNIST_IMG_WIDTH 28  // image width in pixels
 #define MNIST_IMG_HEIGHT 28 // image height in pixels
 #define NUMBER_OF_INPUT_CELLS 784   ///< use 28*28 input cells (= number of pixels per MNIST image)

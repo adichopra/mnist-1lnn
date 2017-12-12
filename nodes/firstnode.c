@@ -18,10 +18,6 @@ uint64_t in_packets[MNIST_MAX_TESTING_IMAGES][PACKET_WORDS];
 int total_req2 = 0, total_comp2 = 0;
 char inflight2[MNIST_MAX_TESTING_IMAGES];
 
-// uint64_t nic_macaddr() {
-//     return 0x200006d1200;
-// }
-
 MNIST_Image getImage(int i){
     return imgs[i];
 }
@@ -48,9 +44,8 @@ static void process_loop(void) {
     send_comp = (counts >> NIC_COUNT_SEND_COMP) & 0xf;
 
     for (int i = 0; i < send_comp; i++) {
-        printf("sending #%d\n", comp_id);
         nic_complete_send();
-        printf("sent #%d\n", comp_id);
+        // printf("nic_complete_send [i=%d, comp_id=%d, send_req=%d, send_comp=%d]\n", i, comp_id, send_req, send_comp);
         inflight[comp_id] = 0;
         comp_id = (comp_id + 1) % MNIST_MAX_TESTING_IMAGES;
         total_comp++;
@@ -59,9 +54,8 @@ static void process_loop(void) {
     for (int i = 0; i < send_req; i++) {
         if (inflight[req_id])
             break;
-        printf("posting #%d\n", req_id);
         nic_post_send((uint64_t) out_packets[req_id], PACKET_WORDS * 8);
-        printf("posted #%d\n", req_id);
+        // printf("nic_post_send [i=%d, req_id=%d, send_req=%d, send_comp=%d]\n", i, req_id, send_req, send_comp);
         inflight[req_id] = 1;
         req_id = (req_id + 1) % MNIST_MAX_TESTING_IMAGES;
         total_req++;
@@ -79,13 +73,13 @@ static inline void process_loop2(void) {
 
     for (int i = 0; i < recv_comp; i++) {
         len = nic_complete_recv();
-        printf("completed recv #%d\n", comp_id);
+        // printf("nic_complete_recv [i=%d, comp_id=%d, recv_req=%d, recv_comp=%d]\n", i, comp_id, recv_req, recv_comp);
         if (len != PACKET_WORDS * sizeof(uint64_t)) {
             printf("Incorrectly sized packet\n");
             abort();
         }
 
-        printf("Result = %d\n", ((Message*) (in_packets[comp_id] + 24))->max.idx);
+        // printf("Result = %d\n", ((Message*) (in_packets[comp_id] + 24))->max.idx);
 
         inflight2[comp_id] = 0;
         comp_id = (comp_id + 1) % MNIST_MAX_TESTING_IMAGES;
@@ -96,23 +90,12 @@ static inline void process_loop2(void) {
         if (inflight2[req_id])
             break;
         nic_post_recv((uint64_t) in_packets[req_id]);
+        // printf("nic_post_recv [i=%d, req_id=%d, recv_req=%d, recv_comp=%d]\n", i, req_id, recv_req, recv_comp);
 
         inflight2[req_id] = 1;
         req_id = (req_id + 1) % MNIST_MAX_TESTING_IMAGES;
         total_req2++;
     }
-}
-
-void sendImage(MNIST_Image img) {
-    // TODO(adichopra): send from NIC
-    printf("Sending data to %lx\n", NEXT_MACADDR);
-    return;
-}
-
-void getResult() {
-    // TODO(adichopra): send from NIC
-    printf("Recving data from %lx\n", PREV_MACADDR);
-    return;
 }
 
 int main(int argc, const char * argv[]) {
@@ -134,10 +117,13 @@ int main(int argc, const char * argv[]) {
         cycle = rdcycle();
     } while (cycle < START_CYCLE);
 
-    printf("Start MNIST\n");
+    // printf("Start MNIST\n");
 
 
     do {
+        // if (cycle % 1000000 == 0) {
+        //     printf("%d sent, process_loop again\n", total_comp);
+        // }
         if (total_comp < MNIST_MAX_TESTING_IMAGES) {
             printf("%d sent, process_loop again\n", total_comp);
             process_loop();
@@ -151,12 +137,12 @@ int main(int argc, const char * argv[]) {
             cycle, total_comp);
 
     while (total_comp < total_req || total_comp2 < total_req2) {
-        printf("finish_comp\n");
+        // printf("finish_comp\n");
         counts = nic_counts();
         comp = (counts >> NIC_COUNT_SEND_COMP) & 0xf;
 
         for (int i = 0; i < comp; i++) {
-            printf("finish_comp #%d\n", i);
+            // printf("finish_comp #%d\n", i);
             nic_complete_send();
             total_comp++;
         }

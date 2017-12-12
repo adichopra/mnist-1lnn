@@ -1,5 +1,6 @@
 import subprocess
 import os
+import sys
 
 CC=["riscv64-unknown-elf-gcc"]
 CFLAGS=["-mcmodel=medany", "-Wall", "-O2", "-fno-common", "-fno-builtin-printf", "-Wno-missing-braces"]
@@ -32,6 +33,7 @@ START_CYCLE = 0
 END_CYCLE = 800 * 1000 * 1000
 SERVER_WAIT = 6 * END_CYCLE
 CLIENT_WAIT = 8 * END_CYCLE
+MNIST_MAX_TESTING_IMAGES = int(sys.argv[1])
 
 def main():
     if not os.path.isdir("testbuild"):
@@ -48,7 +50,8 @@ def main():
          "PACKET_WORDS": PACKET_WORDS,
          "START_CYCLE": ltoa(START_CYCLE),
          "END_CYCLE": ltoa(END_CYCLE),
-         "WAIT_CYCLES": ltoa(CLIENT_WAIT)})
+         "WAIT_CYCLES": ltoa(CLIENT_WAIT),
+         "MNIST_MAX_TESTING_IMAGES": MNIST_MAX_TESTING_IMAGES})
     link(["testbuild/firstnode.o", "testbuild/crt.o", "testbuild/syscalls.o"], "testbuild/firstnode.riscv")
 
     for i in range(1, 6):
@@ -62,7 +65,8 @@ def main():
              "PACKET_WORDS": PACKET_WORDS,
              "START_CYCLE": ltoa(START_CYCLE),
              "END_CYCLE": ltoa(END_CYCLE),
-             "WAIT_CYCLES": ltoa(CLIENT_WAIT)})
+             "WAIT_CYCLES": ltoa(CLIENT_WAIT),
+             "MNIST_MAX_TESTING_IMAGES": MNIST_MAX_TESTING_IMAGES})
         link([BASE + ".o", "testbuild/crt.o", "testbuild/syscalls.o"], BASE + ".riscv")
 
 if __name__ == "__main__":
