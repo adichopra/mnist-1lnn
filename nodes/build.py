@@ -30,9 +30,6 @@ MACS += ["00:12:6D:00:00:{:02x}".format(i) for i in range(3, 8)]
 MACS.append(FIRST_NODE_MAC)
 PACKET_WORDS = 200
 START_CYCLE = 0
-END_CYCLE = 800 * 1000 * 1000
-SERVER_WAIT = 6 * END_CYCLE
-CLIENT_WAIT = 8 * END_CYCLE
 MNIST_MAX_TESTING_IMAGES = int(sys.argv[1])
 
 def main():
@@ -49,8 +46,6 @@ def main():
          "NEXT_MACADDR": mac_to_hex(MACS[1]),
          "PACKET_WORDS": PACKET_WORDS,
          "START_CYCLE": ltoa(START_CYCLE),
-         "END_CYCLE": ltoa(END_CYCLE),
-         "WAIT_CYCLES": ltoa(CLIENT_WAIT),
          "MNIST_MAX_TESTING_IMAGES": MNIST_MAX_TESTING_IMAGES})
     link(["testbuild/firstnode.o", "testbuild/crt.o", "testbuild/syscalls.o"], "testbuild/firstnode.riscv")
 
@@ -64,8 +59,6 @@ def main():
              "NEXT_MACADDR": mac_to_hex(MACS[i + 1]),
              "PACKET_WORDS": PACKET_WORDS,
              "START_CYCLE": ltoa(START_CYCLE),
-             "END_CYCLE": ltoa(END_CYCLE),
-             "WAIT_CYCLES": ltoa(CLIENT_WAIT),
              "MNIST_MAX_TESTING_IMAGES": MNIST_MAX_TESTING_IMAGES})
         link([BASE + ".o", "testbuild/crt.o", "testbuild/syscalls.o"], BASE + ".riscv")
 
