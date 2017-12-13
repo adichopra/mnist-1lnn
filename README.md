@@ -8,4 +8,4 @@ See `vec-nn/`
 
 ### Running in simulation
 
-See `nodes`
+See `nodes/`
